@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operación y Mantenimiento</title>
+
+    <!-- Incluyendo los estilos de Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-minimap@3.6.1/dist/Control.MiniMap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css" />
+    <link rel="stylesheet" href="./css/L.Control.MousePosition.css">
+
+    <!-- Incluyendo los scripts de Leaflet -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-minimap@3.6.1/dist/Control.MiniMap.min.js"></script>
+    <script src="./js/L.Control.MousePosition.js"></script>
+
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        .leaflet-tooltip {
+            font-size: 10px;
+            font-weight: bold;
+            color: black;
+            background-color: white;
+            border: 1px solid black;
+            padding: 3px;
+            border-radius: 5px;
+        }
+
+        .download-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 5px;
+        }
+
+        .download-btn:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+
+    <a href="./data/O_arte_CM.gpkg" download="O_arte_CM.gpkg">
+        <button class="download-btn">Descargar Archivo</button>
+    </a>
+
+    <script>
+        // Inicializa el mapa centrado en Lagunillas
+        var map = L.map('map').setView([-15.676694, -70.443056], 12);
+
+        // Añade una capa base de OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Definir el estilo para los puntos
+        function estiloPunto(feature) {
+            return {
+                color: 'black',
+                radius: 5,
+                fillColor: 'white',
+                fillOpacity: 0.7
+            };
+        }
+
+        // Función para agregar etiquetas a cada punto
+        function onEachFeaturePunto(feature, layer) {
+            if (feature.properties && feature.properties.nombre) { // Cambia 'nombre' según tu GeoJSON
+                layer.bindTooltip(feature.properties.nombre, {
+                    permanent: true,
+                    direction: "top"
+                });
+            }
+        }
+
+        // Carga del archivo GeoJSON con estilo y etiquetas para puntos
+        fetch('./data/O_arte_CM.geojson') // Cambia el nombre del archivo según corresponda
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                var geojsonLayer = L.geoJSON(data, {
+                    pointToLayer: function(feature, latlng) {
+                        return L.circleMarker(latlng, estiloPunto(feature)); // Crea un círculo para cada punto
+                    },
+                    onEachFeature: onEachFeaturePunto
+                }).addTo(map);
+                map.fitBounds(geojsonLayer.getBounds());
+            })
+            .catch(function(error) {
+                console.error('Error al cargar el GeoJSON:', error);
+            });
+
+        // Capa base para el minimapa
+        var miniMapLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        });
+
+        // Crear el minimapa
+        var miniMap = new L.Control.MiniMap(miniMapLayer, {
+            toggleDisplay: true,
+            minimized: false,
+            position: 'bottomright'
+        }).addTo(map);
+
+        // Visualización de coordenadas del mouse
+        L.control.mousePosition({
+            position: 'bottomleft',
+        }).addTo(map);
+
+        // Barra de escala
+        L.control.scale({
+            position: 'bottomleft',
+            metric: true,
+        }).addTo(map);
+    </script>
+
+</body>
+
+</html>
